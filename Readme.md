@@ -13,18 +13,23 @@
 # 使用方式
 
 1. 指定渲染参数
+    ```
     config = {
         "range_x": [0, 1000],           // x轴范围
         "range_y": [0, 800],            // y轴范围
         "display_size": [1000, 800],    // 窗口大小
         #"bg_img": "./map_back.png"     // 选填, 背景图片
-    }}
+    }
+    ```
 
 2. 创建RenderApi示例, 并初始化
+    ```
     render = RenderApi(config)
     render.init()
-
+    ```
+    
 3. 准备渲染数据
+    ```
     units = [
         {
             "name": "Demo"                      // 单位名称
@@ -36,6 +41,10 @@
         }
     ]
     data = {"units": units}
-
+    ```
 4. 更新态势
-    render.update(data)
+    ```
+    while True:
+        # 更新data
+        render.update(data)
+    ```

@@ -10,5 +10,5 @@ blue = 0,0,255
 red = 255,0,0
 
 
-ICON_SIZE = [32, 32]
+ICON_SIZE = [128, 128]
 ScaleCoff = 0.8

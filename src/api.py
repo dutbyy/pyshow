@@ -35,3 +35,7 @@ class RenderApi:
         self.queue.close()
         self.render_process = None
         self.queue = None
+
+    #def get_info(self):
+    #    if self.queue2.qsize():
+    #        return self.queue2.get()

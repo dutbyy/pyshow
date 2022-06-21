@@ -97,11 +97,11 @@ class ScreenProcessor:
         y = self.y_unfix(position[1])
         return [x, y]
 
-    def fix_screen_by_mouse(self):
+    def fix_screen_by_mouse(self, text_size=12):
         pos = pygame.mouse.get_pos()
         [mx, my] = self.to_map(pos)
         message = f"{int(mx)}, {int(my)}"
-        text_render = self.text.render(message, True, self.tcolor)
+        text_render = self.text[text_size].render(message, True, self.tcolor)
         text_width, text_height = text_render.get_width(), text_render.get_height()
         tpos = [pos[0] - text_width / 2, pos[1] - text_height / 2 ]
         self.screen.blit(text_render, tpos)
@@ -115,13 +115,13 @@ class ScreenProcessor:
 
     def init_text(self):
         fontpath = f"{LibPath}/fonts/msyh.ttc"
-        self.text = pygame.font.Font(fontpath, 12)
+        self.text = {fontsize: pygame.font.Font(fontpath, fontsize) for fontsize in range(8, 38)}
         #self.text.set_bold(True)
 
     def init_image(self):
         self.dicon = {}
-        self.icons = {"red": {}, "blue":{}}
-        for side in ['red', 'blue']:
+        self.icons = {"red": {}, "blue":{}, "white":{}}
+        for side in ['red', 'blue', 'white']:
             pngs = os.listdir(f"{LibPath}/icons/{side}")
             for icon_file in pngs:
                 img_path = f"{LibPath}/icons/{side}/{icon_file}"
@@ -135,29 +135,34 @@ class ScreenProcessor:
         return self.icons[side].get(icon, self.dicon[side])
 
     def fix_screen_by_unit(self, unit):
-        name = unit.get('name', 'obj')
+        name = unit.get('name', '')
         icon = unit.get('icon', name)
         side = unit.get('side', 'white')
         uid = unit.get('uid', -1)
         pos = self.from_map(unit['position'])
         cirsize = unit.get("cirsize", 0)
+        iconsize = unit.get('iconsize', -1)
+        fontsize = unit.get('textsize',15)
 
         #sfc_infos = []
 
         # 图标
         img = self.get_image(icon, side)
+        if iconsize != -1:
+            img = pygame.transform.scale(img, (iconsize, iconsize))
         img_width, img_height= img.get_width(), img.get_height()
         img_pos = [pos[0] - img_width / 2, pos[1] - img_height / 2]
         # sfc_infos.append([img, img_pos])
         self.screen.blit(img, img_pos)
 
         # 名称
-        message = f"{name}-{uid}"
-        text_render = self.text.render(message, True, self.tcolor)
+        message = f"{name}-{uid}" if name and uid!=-1 else name if name else ""
+        text_render = self.text[fontsize].render(message, True, self.tcolor)
         text_width, text_height = text_render.get_width(), text_render.get_height()
         tpos = [pos[0] - text_width / 2, pos[1] - img_height / 2 - text_height ]
         # sfc_infos.append([text_render, tpos])
         self.screen.blit(text_render, tpos)
+        #self.screen.draw.text(message, img_pos)
 
         # 圆圈
         if cirsize:
@@ -220,6 +225,7 @@ def pipeline(queue, config):
         print(f"Load Back Image Failed! path: [{bg_path}]")
 
     tcolor = config.get("tcolor", black)
+    fontsize = config.get("fontsize", 12)
     processor = ScreenProcessor(screen, range_x, range_y, display_size, tcolor, bg_img)
 
     old_obs, obs = None, None

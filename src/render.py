@@ -38,6 +38,7 @@ class ScreenProcessor:
         self.scale_k = (self.range_x[1] - self.range_x[0]) / self.window_size[0]
 
 
+
     def scale_magnify(self):
         if self.scale < .1:
             return
@@ -99,6 +100,7 @@ class ScreenProcessor:
 
     def fix_screen_by_mouse(self, text_size=12):
         pos = pygame.mouse.get_pos()
+        print('mouse is in ', pos)
         [mx, my] = self.to_map(pos)
         message = f"{int(mx)}, {int(my)}"
         text_render = self.text[text_size].render(message, True, self.tcolor)
@@ -129,6 +131,7 @@ class ScreenProcessor:
                 self.icons[side][icon_name] = pygame.transform.scale(pygame.image.load(img_path), self.icon_size)
             img_path = f"{LibPath}/icons/{side}/obj.png"
             self.dicon[side] = pygame.transform.scale(pygame.image.load(img_path), self.icon_size)
+        self.mouse_cursor = pygame.transform.scale(self.icons['white']['nock'], (15, 15))
 
 
     def get_image(self, icon, side):
@@ -168,6 +171,13 @@ class ScreenProcessor:
         if cirsize:
             pygame.draw.circle(self.screen, blue if side == 'blue' else red , pos, cirsize/self.scale_k, 3)
 
+    def fix_mouse_img(self):
+        x, y = pygame.mouse.get_pos()
+        #隐藏鼠标
+        x -= self.mouse_cursor.get_width() / 2
+        y -= self.mouse_cursor.get_height() / 2
+        #用其他图形代替鼠标
+        self.screen.blit(self.mouse_cursor, (x, y))
 
     def fix_screen_bg(self):
         self.screen.fill(white)
@@ -213,6 +223,7 @@ def pipeline(queue, config):
         raise Exception("Please Point the Maps Limit and Display Size")
 
     pygame.init()
+    #pygame.mouse.set_visible(False)
     windowSize = [800, 800] #generator.gen_winsize(config)      # 窗口大小处理
     screen = pygame.display.set_mode(display_size)    # 创建screen
     pygame.display.set_caption("PipeLine")          # 指定display的title
@@ -255,6 +266,7 @@ def pipeline(queue, config):
                 time.sleep(1)
                 continue
             processor.fix_screen_bg()
+            #processor.fix_mouse_img()
             processor.fix_move()
             processor.fix_screen_by_obs(obs)
             processor.fix_screen_by_mouse()

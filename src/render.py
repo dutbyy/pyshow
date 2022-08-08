@@ -100,7 +100,7 @@ class ScreenProcessor:
 
     def fix_screen_by_mouse(self, text_size=12):
         pos = pygame.mouse.get_pos()
-        print('mouse is in ', pos)
+        #print('mouse is in ', pos)
         [mx, my] = self.to_map(pos)
         message = f"{int(mx)}, {int(my)}"
         text_render = self.text[text_size].render(message, True, self.tcolor)
@@ -117,7 +117,7 @@ class ScreenProcessor:
 
     def init_text(self):
         fontpath = f"{LibPath}/fonts/msyh.ttc"
-        self.text = {fontsize: pygame.font.Font(fontpath, fontsize) for fontsize in range(8, 38)}
+        self.text = {fontsize: pygame.font.Font(fontpath, fontsize) for fontsize in range(8, 61)}
         #self.text.set_bold(True)
 
     def init_image(self):
@@ -146,12 +146,15 @@ class ScreenProcessor:
         cirsize = unit.get("cirsize", 0)
         iconsize = unit.get('iconsize', -1)
         fontsize = unit.get('textsize',15)
+        fontsize = min(int(fontsize/(self.scale ** .5)), 60)
+
 
         #sfc_infos = []
 
         # 图标
         img = self.get_image(icon, side)
         if iconsize != -1:
+            iconsize = int(iconsize/(self.scale **.5))
             img = pygame.transform.scale(img, (iconsize, iconsize))
         img_width, img_height= img.get_width(), img.get_height()
         img_pos = [pos[0] - img_width / 2, pos[1] - img_height / 2]
@@ -273,6 +276,7 @@ def pipeline(queue, config):
             pygame.display.flip()
             pygame.time.wait(1)
     except Exception as e:
+        raise(e)
         print('**'*10)
         print(e)
         print('**'*10)

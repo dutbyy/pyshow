@@ -225,6 +225,10 @@ def pipeline(queue, config):
     except Exception as e:
         raise Exception("Please Point the Maps Limit and Display Size")
 
+    while True:
+        if queue.empty():
+            time.sleep(.1)
+
     pygame.init()
     #pygame.mouse.set_visible(False)
     windowSize = [800, 800] #generator.gen_winsize(config)      # 窗口大小处理
@@ -261,13 +265,14 @@ def pipeline(queue, config):
         #print('qsize is ', queue.qsize())
             if queue.qsize() > 30:
                 print(f"Render Delay, {queue.qsize()}")
-            if queue and not queue.empty():
-                old_obs = obs
-                obs = queue.get()
-            if not queue or not obs:
-                print("obs is None")
+            if not queue:
+                print('Error : queue is None')
+            elif queue.empty():
                 time.sleep(1)
                 continue
+            else:
+                old_obs = obs
+                obs = queue.get()
             processor.fix_screen_bg()
             #processor.fix_mouse_img()
             processor.fix_move()

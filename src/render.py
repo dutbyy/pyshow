@@ -36,6 +36,9 @@ class ScreenProcessor:
         self.x_unfix = lambda x : x / self.display_width * self.map_width + self.x_bias
         self.y_unfix = lambda x : (1 - x / self.display_height) * self.map_height + self.y_bias
         self.scale_k = (self.range_x[1] - self.range_x[0]) / self.window_size[0]
+        self.background = pygame.transform.scale(self.bg_img, [ i / self.scale for i in self.window_size])
+
+
 
 
 
@@ -143,6 +146,8 @@ class ScreenProcessor:
         side = unit.get('side', 'white')
         uid = unit.get('uid', -1)
         pos = self.from_map(unit['position'])
+        if not self.range_x[0] <= unit['position'][0] <= self.range_x[1] or not self.range_y[0] <= unit['position'][1] <= self.range_y[1]:
+            return
         cirsize = unit.get("cirsize", 0)
         iconsize = unit.get('iconsize', -1)
         fontsize = unit.get('textsize',15)
@@ -183,12 +188,12 @@ class ScreenProcessor:
         self.screen.blit(self.mouse_cursor, (x, y))
 
     def fix_screen_bg(self):
-        self.screen.fill(white)
         if not self.bg_img:
-            return
-        background = pygame.transform.scale(self.bg_img, [ i / self.scale for i in self.window_size])
-        pos = self.from_map([self.origin_x[0], self.origin_y[1]])
-        self.screen.blit(background, pos)
+            self.screen.fill(white)
+        else:
+            atime = time.time()
+            pos = self.from_map([self.origin_x[0], self.origin_y[1]])
+            self.screen.blit(self.background, pos)
 
     def fix_move(self):
         if self.mouse_moving == False:
@@ -227,7 +232,9 @@ def pipeline(queue, config):
 
     while True:
         if queue.empty():
-            time.sleep(.1)
+            time.sleep(.01)
+        else:
+            break
 
     pygame.init()
     #pygame.mouse.set_visible(False)
@@ -263,12 +270,10 @@ def pipeline(queue, config):
                     processor.mouse_moving = False
 
         #print('qsize is ', queue.qsize())
-            if queue.qsize() > 30:
-                print(f"Render Delay, {queue.qsize()}")
             if not queue:
                 print('Error : queue is None')
             elif queue.empty():
-                time.sleep(1)
+                time.sleep(.01)
                 continue
             else:
                 old_obs = obs

@@ -36,7 +36,8 @@ class ScreenProcessor:
         self.x_unfix = lambda x : x / self.display_width * self.map_width + self.x_bias
         self.y_unfix = lambda x : (1 - x / self.display_height) * self.map_height + self.y_bias
         self.scale_k = (self.range_x[1] - self.range_x[0]) / self.window_size[0]
-        self.background = pygame.transform.scale(self.bg_img, [ i / self.scale for i in self.window_size])
+        if self.bg_img:
+            self.background = pygame.transform.scale(self.bg_img, [ i / self.scale for i in self.window_size])
 
 
 

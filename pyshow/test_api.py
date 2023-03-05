@@ -12,8 +12,8 @@ def rand_gen():
             "side": "blue" if uid % 2 else "red",
             "type": "飞机" if uid % 2 else "坦克",
             "icon": "plane" if uid % 2 else "tank",
-            # "iconsize": 32,#"plane" if uid % 2 else "tank",
-            "cirsize": 200,
+            "iconsize": 36,#"plane" if uid % 2 else "tank",
+            "cirsize": 2000,
             'course': 0,
         }
         for uid in range(2)
@@ -23,12 +23,12 @@ def rand_gen():
     dir2 = [0, 0]
     for _ in range(3000):
         for i in range(2):
-            # obs[i]['position'][0] += 1 * (-1)**(dir1[i] + i)
-            # if  obs[i]['position'][0] <= 10 or obs[i]['position'][0] >= 990:
-            #     dir1[i] += 1
-            # obs[i]['position'][1] += 1.5 * (-1)**(dir2[i] + i)
-            # if obs[i]['position'][1] >= 790 or  obs[i]['position'][1] <= 10:
-            #     dir2[i] += 1
+            obs[i]['position'][0] += 1 * (-1)**(dir1[i] + i)
+            if  obs[i]['position'][0] <= 10 or obs[i]['position'][0] >= 990:
+                dir1[i] += 1
+            obs[i]['position'][1] += 1.5 * (-1)**(dir2[i] + i)
+            if obs[i]['position'][1] >= 790 or  obs[i]['position'][1] <= 10:
+                dir2[i] += 1
             obs[i]['course'] += 0.5
             obs[i]['course'] %= 360
         yield {"units": obs}
@@ -38,7 +38,7 @@ def test_api():
         "range_x": [0, 1000],
         "range_y": [0, 800],
         "display_size": [1000, 800],
-        #"bg_img": "./map_back.png"
+        "bg_img": "./map_back.png"
     }
     render = RenderApi(config)
     render.init()

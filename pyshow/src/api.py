@@ -16,7 +16,7 @@ class RenderApi:
             return
         self.queue = Queue()
         self.render_process = Process(target = RenderFunc, args = (self.queue, self.config))
-        self.render_process.daemon = True
+        # self.render_process.daemon = True
         self.render_process.start()
 
     def update(self, obs, wait_time=None):

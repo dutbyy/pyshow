@@ -233,8 +233,9 @@ def pipeline(queue, config):
             time.sleep(.01)
         else:
             break
-
     pygame.init()
+    clock = pygame.time.Clock()
+
     #pygame.mouse.set_visible(False)
     windowSize = [800, 800] #generator.gen_winsize(config)      # 窗口大小处理
     screen = pygame.display.set_mode(display_size)    # 创建screen
@@ -252,8 +253,11 @@ def pipeline(queue, config):
     processor = ScreenProcessor(screen, range_x, range_y, display_size, tcolor, bg_img)
 
     old_obs, obs = None, None
+    now_tick = 0 
     try:
         while True:
+            now_tick += 1 
+            clock.tick_busy_loop(200)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -269,10 +273,10 @@ def pipeline(queue, config):
 
             if not queue:
                 print('Error : queue is None')
+                exit()
             elif queue.empty():
-                time.sleep(1/256)
+                pass 
             else:
-                old_obs = obs
                 obs = queue.get()
             processor.fix_screen_bg()
             # processor.fix_mouse_img()
@@ -280,9 +284,11 @@ def pipeline(queue, config):
             processor.fix_screen_by_obs(obs)
             processor.fix_screen_by_mouse()
             pygame.display.flip()
-            pygame.time.wait(1)
+            if now_tick % 100 == 0:
+                fps = clock.get_fps()
+                print(f'fps is {fps} , tick is {now_tick} ')
     except Exception as e:
-        print("Exception : \n{e}")
+        print(f"Exception : \n{e}")
         exit()
     print('pipeline Over')
 

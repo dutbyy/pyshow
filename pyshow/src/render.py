@@ -39,10 +39,6 @@ class ScreenProcessor:
         if self.bg_img:
             self.background = pygame.transform.scale(self.bg_img, [ i / self.scale for i in self.window_size])
 
-
-
-
-
     def scale_magnify(self):
         if self.scale < .1:
             return
@@ -59,7 +55,6 @@ class ScreenProcessor:
         self.range_x = [xl, xr]
         self.range_y = [yl, yr]
         self.scale_fix()
-
 
     def scale_minify(self):
         if self.scale >= ScaleCoff:
@@ -89,7 +84,6 @@ class ScreenProcessor:
         self.range_y = [yl, yr]
         self.scale_fix()
 
-
     # 将地图上的坐标映射到窗口上
     def from_map(self, position):
         x = self.x_fix(position[0])
@@ -112,7 +106,6 @@ class ScreenProcessor:
         tpos = [pos[0] - text_width / 2, pos[1] - text_height / 2 ]
         self.screen.blit(text_render, tpos)
 
-
     def fix_screen_by_obs(self, obs):
         for unit in obs.get("units", []):
             self.fix_screen_by_unit(unit)
@@ -132,11 +125,11 @@ class ScreenProcessor:
             for icon_file in pngs:
                 img_path = f"{LibPath}/icons/{side}/{icon_file}"
                 icon_name = icon_file.split('.')[0]
-                self.icons[side][icon_name] = pygame.transform.scale(pygame.image.load(img_path), self.icon_size)
+                self.icons[side][icon_name] = pygame.image.load(img_path).convert_alpha()
+                # self.icons[side][icon_name] = pygame.transform.scale(pygame.image.load(img_path), self.icon_size)
             img_path = f"{LibPath}/icons/{side}/obj.png"
             self.dicon[side] = pygame.transform.scale(pygame.image.load(img_path), self.icon_size)
         self.mouse_cursor = pygame.transform.scale(self.icons['white']['nock'], (15, 15))
-
 
     def get_image(self, icon, side):
         return self.icons[side].get(icon, self.dicon[side])
@@ -152,6 +145,7 @@ class ScreenProcessor:
         cirsize = unit.get("cirsize", 0)
         iconsize = unit.get('iconsize', -1)
         fontsize = unit.get('textsize',15)
+        rotate = 0 - unit.get('course', 0)
         fontsize = min(int(fontsize/(self.scale ** .5)), 60)
 
 
@@ -162,6 +156,10 @@ class ScreenProcessor:
         if iconsize != -1:
             iconsize = int(iconsize/(self.scale **.5))
             img = pygame.transform.scale(img, (iconsize, iconsize))
+
+        if rotate:
+            img = pygame.transform.rotate(img, rotate)
+
         img_width, img_height= img.get_width(), img.get_height()
         img_pos = [pos[0] - img_width / 2, pos[1] - img_height / 2]
         # sfc_infos.append([img, img_pos])
@@ -192,7 +190,6 @@ class ScreenProcessor:
         if not self.bg_img:
             self.screen.fill(white)
         else:
-            atime = time.time()
             pos = self.from_map([self.origin_x[0], self.origin_y[1]])
             self.screen.blit(self.background, pos)
 
@@ -270,27 +267,23 @@ def pipeline(queue, config):
                 elif event.type == pygame.MOUSEBUTTONUP:
                     processor.mouse_moving = False
 
-        #print('qsize is ', queue.qsize())
             if not queue:
                 print('Error : queue is None')
             elif queue.empty():
-                time.sleep(.01)
-                continue
+                time.sleep(1/256)
             else:
                 old_obs = obs
                 obs = queue.get()
             processor.fix_screen_bg()
-            #processor.fix_mouse_img()
+            # processor.fix_mouse_img()
             processor.fix_move()
             processor.fix_screen_by_obs(obs)
             processor.fix_screen_by_mouse()
             pygame.display.flip()
             pygame.time.wait(1)
     except Exception as e:
-        raise(e)
-        print('**'*10)
-        print(e)
-        print('**'*10)
+        print("Exception : \n{e}")
+        exit()
     print('pipeline Over')
 
 
@@ -324,4 +317,3 @@ if '__main__' == __name__:
         }
         queue.put(obs)
         time.sleep(.02)
-

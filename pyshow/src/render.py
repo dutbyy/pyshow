@@ -1,43 +1,66 @@
 import time
-import pygame
 import os
+import pygame
+import math
 from .const import white, gray, green, blue, red, black
 from .const import ScaleCoff
 from .const import LibPath
 from .const import ICON_SIZE
 
 class ScreenProcessor:
-    def __init__(self, screen, range_x, range_y, window_size, tcolor=black, bg_img=None):
-        self.tcolor = tcolor
-        self.screen = screen
-        self.bg_img = bg_img
-        self.origin_x = range_x
-        self.origin_y = range_y
-        self.window_size = window_size
-        self.scale_k = (range_x[1] - range_x[0]) / self.window_size[0]
+    def __init__(self, queue, config):
+        self.queue = queue
+        self.display_size = config.get("display_size", (1600, 900))
+        self.screen = pygame.display.set_mode(self.display_size)      # 创建screen
+
+        self.clock = pygame.time.Clock()
+
+       
+        # 字体设置
+        self.text_color      = config.get("text_color", black)
+        self.font_size       = config.get("fontsize", 15)
+
+        # 经纬度坐标转换
+        self.central_lon     = config.get("central_lon", None)
+        self.central_lat     = config.get("central_lat", None)
+
+        # 加载背景图片
+        self.bg_path         = config.get("bg_img", None)
+        self.bg_img          = self.load_img(self.bg_path)
+
+        # 缩放管理
+        self.origin_x = config["range_x"]
+        self.origin_y = config["range_y"]
         self.scale = 1.0
+        self.range_x = [self.origin_x[0], self.origin_x[1]]
+        self.range_y = [self.origin_y[0], self.origin_y[1]]
+        self.scale_k = (self.range_x[1] - self.range_x[0]) / self.display_size[0]
+        
+        # 鼠标
         self.mouse_moving = False
         self.mlast_pos = None
 
+        # 图标默认大小
         self.icon_size = ICON_SIZE
 
-        self.range_x = range_x
-        self.range_y = range_y
+        # 调整比例
         self.scale_fix()
-        self.init_image()
+        # 加载图标
+        self.init_icon()
+        # 加载字体
         self.init_text()
 
     def scale_fix(self):
         self.x_bias, self.map_width = self.range_x[0], self.range_x[1] - self.range_x[0]
         self.y_bias, self.map_height = self.range_y[0], self.range_y[1] - self.range_y[0]
-        self.display_width , self.display_height = self.window_size
+        self.display_width , self.display_height = self.display_size
         self.x_fix = lambda x : (x - self.x_bias) / self.map_width * self.display_width
         self.y_fix = lambda x : ( 1 - (x - self.y_bias) / self.map_height ) * self.display_height
         self.x_unfix = lambda x : x / self.display_width * self.map_width + self.x_bias
         self.y_unfix = lambda x : (1 - x / self.display_height) * self.map_height + self.y_bias
-        self.scale_k = (self.range_x[1] - self.range_x[0]) / self.window_size[0]
+        self.scale_k = (self.range_x[1] - self.range_x[0]) / self.display_size[0]
         if self.bg_img:
-            self.background = pygame.transform.scale(self.bg_img, [ i / self.scale for i in self.window_size])
+            self.background = pygame.transform.scale(self.bg_img, [ i / self.scale for i in self.display_size])
 
     def scale_magnify(self):
         if self.scale < .1:
@@ -96,12 +119,22 @@ class ScreenProcessor:
         y = self.y_unfix(position[1])
         return [x, y]
 
+    # 将地图上的坐标转换为经纬度
+    def to_lon_lat(self, position):
+        x = position[0]
+        y = position[1]
+        if not self.central_lat or not self.central_lon:
+            return position
+        lat = y / 111000 + self.central_lat 
+        lon = x / 111000 / math.cos(min(abs(lat), abs(self.central_lat )) * math.pi / 180) + self.central_lon
+        return [lon, lat]
+
     def fix_screen_by_mouse(self, text_size=12):
         pos = pygame.mouse.get_pos()
-        #print('mouse is in ', pos)
-        [mx, my] = self.to_map(pos)
-        message = f"{int(mx)}, {int(my)}"
-        text_render = self.text[text_size].render(message, True, self.tcolor)
+        map_pos = self.to_map(pos)
+        [lon, lat] = self.to_lon_lat(map_pos)
+        message = f"({round(lat, 4)}, {round(lon, 4)})"
+        text_render = self.text[text_size].render(message, True, self.text_color)
         text_width, text_height = text_render.get_width(), text_render.get_height()
         tpos = [pos[0] - text_width / 2, pos[1] - text_height / 2 ]
         self.screen.blit(text_render, tpos)
@@ -117,7 +150,7 @@ class ScreenProcessor:
         self.text = {fontsize: pygame.font.Font(fontpath, fontsize) for fontsize in range(8, 61)}
         #self.text.set_bold(True)
 
-    def init_image(self):
+    def init_icon(self):
         self.dicon = {}
         self.icons = {"red": {}, "blue":{}, "white":{}}
         for side in ['red', 'blue', 'white']:
@@ -143,6 +176,7 @@ class ScreenProcessor:
         if not self.range_x[0] <= unit['position'][0] <= self.range_x[1] or not self.range_y[0] <= unit['position'][1] <= self.range_y[1]:
             return
         cirsize = unit.get("cirsize", 0)
+        rect = unit.get("rect", None)
         iconsize = unit.get('iconsize', -1)
         fontsize = unit.get('textsize',15)
         rotate = 0 - unit.get('course', 0)
@@ -162,21 +196,22 @@ class ScreenProcessor:
 
         img_width, img_height= img.get_width(), img.get_height()
         img_pos = [pos[0] - img_width / 2, pos[1] - img_height / 2]
-        # sfc_infos.append([img, img_pos])
         self.screen.blit(img, img_pos)
 
         # 名称
         message = f"{name}-{uid}" if name and uid!=-1 else name if name else ""
-        text_render = self.text[fontsize].render(message, True, self.tcolor)
+        text_render = self.text[fontsize].render(message, True, self.text_color)
         text_width, text_height = text_render.get_width(), text_render.get_height()
         tpos = [pos[0] - text_width / 2, pos[1] - img_height / 2 - text_height ]
-        # sfc_infos.append([text_render, tpos])
         self.screen.blit(text_render, tpos)
-        #self.screen.draw.text(message, img_pos)
 
         # 圆圈
         if cirsize:
-            pygame.draw.circle(self.screen, blue if side == 'blue' else red , pos, cirsize/self.scale_k, 3)
+            pygame.draw.circle(self.screen, blue if side == 'blue' else red , pos, cirsize/self.scale_k, 1)
+        # 矩形
+        if rect:
+            points = [self.from_map(p) for p in rect]
+            pygame.draw.polygon(self.screen, blue if side == 'blue' else red, points, 1)
 
     def fix_mouse_img(self):
         x, y = pygame.mouse.get_pos()
@@ -212,114 +247,71 @@ class ScreenProcessor:
 
         self.mlast_pos = mpos
 
+    def check_event(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:  # 按压按键
+                if event.button == 4:   # 滚轮向下
+                    self.scale_magnify()
+                elif event.button == 5: # 滚轮向上
+                    self.scale_minify()
+                elif event.button == 1: # 左键
+                    self.mouse_moving = True
+            elif event.type == pygame.MOUSEBUTTONUP:    # 松开按键
+                self.mouse_moving = False
+
+    def update_info(self):
+        if not self.queue.empty():
+            obs = self.queue.get()
+            self.fix_screen_bg()
+            # processor.fix_mouse_img()
+            self.fix_move()
+            self.fix_screen_by_obs(obs)
+            self.fix_screen_by_mouse()
+    
+    def running(self):
+        now_tick = 0
+        while True:
+            now_tick += 1 
+            self.clock.tick_busy_loop(200)
+            self.check_event()
+            self.update_info()
+            
+            pygame.display.flip()
+            if now_tick % 5000 == 0:
+                print(f'fps is {self.clock.get_fps()} , tick is {now_tick}')
+
+    @staticmethod
+    def load_img(img_path):
+        try :
+            bg_img = None if not img_path else pygame.image.load(img_path)
+        except Exception as e:
+            bg_img = None
+            print(f"Load Back Image Failed! path: [{img_path}]")
+        return bg_img
 
 def bye(signum, frame):
-    print("Bye Bye")
+    print("call Bye Bye!!! ")
     exit()
 
 def pipeline(queue, config):
     import signal
+    import traceback
     signal.signal(signal.SIGTERM, bye)
 
-    try :
-        range_x = config["range_x"]
-        range_y = config["range_y"]
-        display_size = config.get("display_size", [800, 600])
-    except Exception as e:
-        raise Exception("Please Point the Maps Limit and Display Size")
+    while queue.empty():
+        time.sleep(.01)
 
-    while True:
-        if queue.empty():
-            time.sleep(.01)
-        else:
-            break
     pygame.init()
-    clock = pygame.time.Clock()
+    pygame.display.set_caption("pyshow")              # 指定display的title
 
-    #pygame.mouse.set_visible(False)
-    windowSize = [800, 800] #generator.gen_winsize(config)      # 窗口大小处理
-    screen = pygame.display.set_mode(display_size)    # 创建screen
-    pygame.display.set_caption("PipeLine")          # 指定display的title
-
-    bg_path = config.get("bg_img", None)
-    try :
-        bg_img = None if not bg_path else pygame.image.load(bg_path)
-    except Exception as e:
-        bg_img = None
-        print(f"Load Back Image Failed! path: [{bg_path}]")
-
-    tcolor = config.get("tcolor", black)
-    fontsize = config.get("fontsize", 12)
-    processor = ScreenProcessor(screen, range_x, range_y, display_size, tcolor, bg_img)
-
-    old_obs, obs = None, None
-    now_tick = 0 
     try:
-        while True:
-            now_tick += 1 
-            clock.tick_busy_loop(200)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 4:
-                        processor.scale_magnify()
-                    elif event.button == 5:
-                        processor.scale_minify()
-                    elif event.button == 1:
-                        processor.mouse_moving = True
-                elif event.type == pygame.MOUSEBUTTONUP:
-                    processor.mouse_moving = False
-
-            if not queue:
-                print('Error : queue is None')
-                exit()
-            elif queue.empty():
-                pass 
-            else:
-                obs = queue.get()
-            processor.fix_screen_bg()
-            # processor.fix_mouse_img()
-            processor.fix_move()
-            processor.fix_screen_by_obs(obs)
-            processor.fix_screen_by_mouse()
-            pygame.display.flip()
-            if now_tick % 100 == 0:
-                fps = clock.get_fps()
-                print(f'fps is {fps} , tick is {now_tick} ')
+        screen_processor = ScreenProcessor(queue, config)
+        screen_processor.running()
     except Exception as e:
-        print(f"Exception : \n{e}")
-        exit()
-    print('pipeline Over')
-
-
-if '__main__' == __name__:
-    from multiprocessing import SimpleQueue, Queue, Process
-    queue = Queue()
-    config = {
-        "range_x": [0, 1000],
-        "range_y": [0, 1000],
-        "display_size": [800, 800]
-    }
-    #
-    #pipeline(queue, config)
-    pshow = Process(target=pipeline, args=(queue, config,))
-    pshow.damon = True
-    pshow.start()
-    print("Start Finished")
-    times = 0
-    while True:
-        times+=2
-        obs = {
-            "units": [
-                {
-                    "name": "plane",
-                    "uid": i,
-                    "position": [(times+i*200) %1000, (times+i*300) % 1000],
-                    "side": "blue",
-                }
-                for i in range(5)
-            ]
-        }
-        queue.put(obs)
-        time.sleep(.02)
+        print(f"Exception : \n{e} \n{traceback.format_exc()}")
+        import sys
+        print("call Sys.exit !!!!!!!")
+        sys.exit()

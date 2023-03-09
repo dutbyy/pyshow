@@ -9,6 +9,7 @@ class RenderApi:
         self.config = config
 
     def __del__(self):
+        # print("call __del__ !")
         self.close()
 
     def init(self):
@@ -20,13 +21,18 @@ class RenderApi:
         self.render_process.start()
 
     def update(self, obs, wait_time=None):
+        if not self.render_process.is_alive():
+            while not self.queue.empty():
+                self.queue.get()
+            exit()
         self.queue.put(obs)
         if wait_time:
             time.sleep(wait_time)
         elif self.queue.qsize()>30:
-            time.sleep(.05)
+            # print(self.queue.qsize())
+            time.sleep(.005)
         else:
-            time.sleep(.03)
+            time.sleep(.001)
 
     def close(self):
         if not self.queue:

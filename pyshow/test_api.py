@@ -46,8 +46,9 @@ def test_api():
         print(i)
         gen = rand_gen()
         for obs in gen:
+            # print('call update')
             render.update(obs)
-            time.sleep(0.01)
+            # time.sleep(0.01)
 
 if __name__ == '__main__':
     print('test api')

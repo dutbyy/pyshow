@@ -10,23 +10,23 @@ from .const import ICON_SIZE
 class ScreenProcessor:
     def __init__(self, queue, config):
         self.queue = queue
+        self.obs = {}
         self.display_size = config.get("display_size", (1600, 900))
         self.screen = pygame.display.set_mode(self.display_size)      # 创建screen
 
         self.clock = pygame.time.Clock()
 
-       
         # 字体设置
         self.text_color      = config.get("text_color", black)
         self.font_size       = config.get("fontsize", 15)
 
-        # 经纬度坐标转换
-        self.central_lon     = config.get("central_lon", None)
-        self.central_lat     = config.get("central_lat", None)
-
         # 加载背景图片
         self.bg_path         = config.get("bg_img", None)
         self.bg_img          = self.load_img(self.bg_path)
+
+        # 经纬度坐标转换
+        self.central_lon     = config.get("central_lon", None)
+        self.central_lat     = config.get("central_lat", None)
 
         # 缩放管理
         self.origin_x = config["range_x"]
@@ -264,24 +264,30 @@ class ScreenProcessor:
 
     def update_info(self):
         if not self.queue.empty():
-            obs = self.queue.get()
-            self.fix_screen_bg()
-            # processor.fix_mouse_img()
-            self.fix_move()
-            self.fix_screen_by_obs(obs)
-            self.fix_screen_by_mouse()
+            self.obs = self.queue.get()
+        self.fix_screen_bg()
+        # processor.fix_mouse_img()
+        self.fix_move()
+        self.fix_screen_by_obs(self.obs)
+        self.fix_screen_by_mouse()
+        self.fix_fps()
+    
+    def fix_fps(self):
+        message = f"fps : {self.fps}"
+        text_render = self.text[self.font_size].render(message, True, self.text_color)
+        tpos = [0,0]
+        self.screen.blit(text_render, tpos)
     
     def running(self):
         now_tick = 0
         while True:
+            if now_tick % 100 == 0:
+                self.fps = int(self.clock.get_fps())
             now_tick += 1 
             self.clock.tick_busy_loop(200)
             self.check_event()
             self.update_info()
-            
             pygame.display.flip()
-            if now_tick % 5000 == 0:
-                print(f'fps is {self.clock.get_fps()} , tick is {now_tick}')
 
     @staticmethod
     def load_img(img_path):

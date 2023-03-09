@@ -7,7 +7,6 @@
     在linux, ubuntu, windows下均测试通过
     由于使用了multiprocessing
     windows下使用时，请确认使用 (if __name__ == '__main__') 明确指定程序入口. (否则会导致异常)
-    
 
 
 # 使用方式
@@ -15,10 +14,14 @@
 1. 指定渲染参数
     ```
     config = {
-        "range_x": [0, 1000],           // x轴范围
-        "range_y": [0, 800],            // y轴范围
+        "range_x": [0, 1000],           // x轴范围  必填
+        "range_y": [0, 800],            // y轴范围  必填
         "display_size": [1000, 800],    // 窗口大小
-        #"bg_img": "./map_back.png"     // 选填, 背景图片
+        "bg_img": "./map_back.png"      // 背景图片
+        "text_color": [255, 255, 255],  // 字体颜色
+        "font_size": 15,                // 字体大小
+        "central_lat": 35.6,            // 中心点经纬度
+        "central_lon": 123.011,         
     }
     ```
 

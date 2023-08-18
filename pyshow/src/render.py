@@ -35,7 +35,7 @@ class ScreenProcessor:
         self.range_x = [self.origin_x[0], self.origin_x[1]]
         self.range_y = [self.origin_y[0], self.origin_y[1]]
         self.scale_k = (self.range_x[1] - self.range_x[0]) / self.display_size[0]
-        
+
         # 鼠标
         self.mouse_moving = False
         self.mlast_pos = None
@@ -98,10 +98,10 @@ class ScreenProcessor:
         xl = xr - self.map_width / ScaleCoff
 
         yl = self.y_bias - (y - self.y_bias)  / ScaleCoff + (y - self.y_bias)
-        yl = max(self.origin_y[0], yl)
+        #yl = max(self.origin_y[0], yl)
         yr = yl + self.map_height / ScaleCoff
-        yr = min(self.origin_y[1], yr)
-        yl = yr - self.map_width / ScaleCoff
+        #yr = min(self.origin_y[1], yr)
+        # yl = yr - self.map_width / ScaleCoff
 
         self.range_x = [xl, xr]
         self.range_y = [yl, yr]
@@ -125,7 +125,7 @@ class ScreenProcessor:
         y = position[1]
         if not self.central_lat or not self.central_lon:
             return position
-        lat = y / 111000 + self.central_lat 
+        lat = y / 111000 + self.central_lat
         lon = x / 111000 / math.cos(min(abs(lat), abs(self.central_lat )) * math.pi / 180) + self.central_lon
         return [lon, lat]
 
@@ -152,15 +152,17 @@ class ScreenProcessor:
 
     def init_icon(self):
         self.dicon = {}
-        self.icons = {"red": {}, "blue":{}, "white":{}}
-        for side in ['red', 'blue', 'white']:
+        self.icons = {}
+        colors = ['red', 'blue', 'white', 'yellow', 'black', 'green']
+        for side in colors:
+            self.icons[side] = {}
             pngs = os.listdir(f"{LibPath}/icons/{side}")
             for icon_file in pngs:
                 img_path = f"{LibPath}/icons/{side}/{icon_file}"
                 icon_name = icon_file.split('.')[0]
                 self.icons[side][icon_name] = pygame.image.load(img_path).convert_alpha()
                 # self.icons[side][icon_name] = pygame.transform.scale(pygame.image.load(img_path), self.icon_size)
-            img_path = f"{LibPath}/icons/{side}/obj.png"
+            img_path = f"{LibPath}/icons/red/obj.png"
             self.dicon[side] = pygame.transform.scale(pygame.image.load(img_path), self.icon_size)
         self.mouse_cursor = pygame.transform.scale(self.icons['white']['nock'], (15, 15))
 
@@ -271,19 +273,19 @@ class ScreenProcessor:
         self.fix_screen_by_obs(self.obs)
         self.fix_screen_by_mouse()
         self.fix_fps()
-    
+
     def fix_fps(self):
         message = f"fps : {self.fps}"
         text_render = self.text[self.font_size].render(message, True, self.text_color)
         tpos = [0,0]
         self.screen.blit(text_render, tpos)
-    
+
     def running(self):
         now_tick = 0
         while True:
             if now_tick % 100 == 0:
                 self.fps = int(self.clock.get_fps())
-            now_tick += 1 
+            now_tick += 1
             self.clock.tick_busy_loop(200)
             self.check_event()
             self.update_info()
